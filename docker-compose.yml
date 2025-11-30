@@ -20,6 +20,7 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+      - "9464:9464"
     environment:
       - PORT=3000
       - REDIS_URL=https://daring-gnu-13089.upstash.io
