@@ -1,8 +1,11 @@
-const express = require('express');
-const redis = require('redis');
-const cors = require('cors');
-const pino = require('pino');
-require('dotenv').config();
+const express = require("express");
+const redis = require("redis");
+const cors = require("cors");
+const pino = require("pino");
+require("dotenv").config();
+
+// Importar metricas custom desde tracing.js
+const { todosCounter, todosGauge, memoryGauge, stressChunksGauge } = require("./tracing");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,12 +14,15 @@ const INSTANCE_ID = process.env.INSTANCE_ID || "1";
 
 // Logger estructurado
 const logger = pino({
-  level: process.env.LOG_LEVEL || 'info',
-  base: { instance: INSTANCE_ID, service: 'todo-api' },
+  level: process.env.LOG_LEVEL || "info",
+  base: { instance: INSTANCE_ID, service: "todo-api" },
 });
 
 // Memory stress test storage
 let memoryHog = [];
+
+// Variable para almacenar el conteo actual de tareas (para metricas)
+let currentTodosCount = 0;
 
 app.use(cors());
 app.use(express.json());
@@ -24,13 +30,16 @@ app.use(express.json());
 // Middleware de logging de requests
 app.use((req, res, next) => {
   const start = Date.now();
-  res.on('finish', () => {
-    logger.info({
-      method: req.method,
-      path: req.path,
-      statusCode: res.statusCode,
-      duration: Date.now() - start,
-    }, 'request completed');
+  res.on("finish", () => {
+    logger.info(
+      {
+        method: req.method,
+        path: req.path,
+        statusCode: res.statusCode,
+        duration: Date.now() - start,
+      },
+      "request completed"
+    );
   });
   next();
 });
@@ -44,14 +53,14 @@ async function conectarRedis() {
       token: process.env.REDIS_TOKEN,
     });
 
-    redisClient.on('error', (err) => {
-      logger.error({ err }, 'Error de conexion a Redis');
+    redisClient.on("error", (err) => {
+      logger.error({ err }, "Error de conexion a Redis");
     });
 
     await redisClient.connect();
-    logger.info({ redisUrl: REDIS_URL }, 'Conectado a Redis');
+    logger.info({ redisUrl: REDIS_URL }, "Conectado a Redis");
   } catch (error) {
-    logger.error({ err: error }, 'Error al conectar con Redis');
+    logger.error({ err: error }, "Error al conectar con Redis");
   }
 }
 
@@ -59,15 +68,17 @@ async function conectarRedis() {
 app.get("/api/todos", async (req, res) => {
   try {
     const todos = await redisClient.get("todos");
-    const lista = Array.isArray(todos)
-      ? todos
-      : todos
-      ? todos // si es string, parsearlo
-      : [];
-    res.json(lista);
+    if (todos) {
+      const parsed = JSON.parse(todos);
+      currentTodosCount = parsed.length;
+      res.json(parsed);
+    } else {
+      currentTodosCount = 0;
+      res.json([]);
+    }
   } catch (error) {
-    logger.error({ err: error }, 'Error al obtener tareas');
-    res.status(500).json({ error: 'Error al obtener las tareas' });
+    logger.error({ err: error }, "Error al obtener tareas");
+    res.status(500).json({ error: "Error al obtener las tareas" });
   }
 });
 
@@ -97,11 +108,15 @@ app.post("/api/todos", async (req, res) => {
     tareasActuales.push(nuevaTarea);
     await redisClient.set("todos", JSON.stringify(tareasActuales));
 
-    logger.info({ taskId: nuevaTarea.id, texto }, 'Tarea creada');
+    // Actualizar metricas
+    todosCounter.add(1);
+    currentTodosCount = tareasActuales.length;
+
+    logger.info({ taskId: nuevaTarea.id, texto }, "Tarea creada");
     res.status(201).json(nuevaTarea);
   } catch (error) {
-    logger.error({ err: error }, 'Error al crear tarea');
-    res.status(500).json({ error: 'Error al crear la tarea' });
+    logger.error({ err: error }, "Error al crear tarea");
+    res.status(500).json({ error: "Error al crear la tarea" });
   }
 });
 
@@ -123,11 +138,11 @@ app.put("/api/todos/:id", async (req, res) => {
     tareasActuales[indice].completada = completada;
     await redisClient.set("todos", JSON.stringify(tareasActuales));
 
-    logger.info({ taskId: id, completada }, 'Tarea actualizada');
+    logger.info({ taskId: id, completada }, "Tarea actualizada");
     res.json(tareasActuales[indice]);
   } catch (error) {
-    logger.error({ err: error, taskId: id }, 'Error al actualizar tarea');
-    res.status(500).json({ error: 'Error al actualizar la tarea' });
+    logger.error({ err: error, taskId: id }, "Error al actualizar tarea");
+    res.status(500).json({ error: "Error al actualizar la tarea" });
   }
 });
 
@@ -148,11 +163,14 @@ app.delete("/api/todos/:id", async (req, res) => {
     const tareaEliminada = tareasActuales.splice(indice, 1)[0];
     await redisClient.set("todos", JSON.stringify(tareasActuales));
 
-    logger.info({ taskId: id }, 'Tarea eliminada');
-    res.json({ mensaje: 'Tarea eliminada exitosamente', tarea: tareaEliminada });
+    // Actualizar metrica
+    currentTodosCount = tareasActuales.length;
+
+    logger.info({ taskId: id }, "Tarea eliminada");
+    res.json({ mensaje: "Tarea eliminada exitosamente", tarea: tareaEliminada });
   } catch (error) {
-    logger.error({ err: error, taskId: id }, 'Error al eliminar tarea');
-    res.status(500).json({ error: 'Error al eliminar la tarea' });
+    logger.error({ err: error, taskId: id }, "Error al eliminar tarea");
+    res.status(500).json({ error: "Error al eliminar la tarea" });
   }
 });
 
@@ -161,7 +179,7 @@ app.post("/api/stress", (req, res) => {
   const allocateMB = 50; // Chunks de 50MB
   const chunks = 20; // Total: ~1GB
 
-  logger.warn('Iniciando stress test de memoria');
+  logger.warn("Iniciando stress test de memoria");
 
   try {
     for (let i = 0; i < chunks; i++) {
@@ -170,7 +188,7 @@ app.post("/api/stress", (req, res) => {
 
     const mem = process.memoryUsage();
     const rssMB = Math.round(mem.rss / 1024 / 1024);
-    logger.warn({ allocatedMB: memoryHog.length * allocateMB, rssMB }, 'Memoria asignada');
+    logger.warn({ allocatedMB: memoryHog.length * allocateMB, rssMB }, "Memoria asignada");
 
     res.json({
       status: "Stress de memoria activado",
@@ -180,7 +198,7 @@ app.post("/api/stress", (req, res) => {
       rssMB: rssMB,
     });
   } catch (e) {
-    logger.error({ err: e }, 'Error al asignar memoria');
+    logger.error({ err: e }, "Error al asignar memoria");
     res.status(500).json({
       error: "Error al asignar memoria",
       instance: INSTANCE_ID,
@@ -198,7 +216,7 @@ app.post("/api/stress/clear", (req, res) => {
     global.gc();
   }
 
-  logger.info({ previousChunks }, 'Memoria liberada');
+  logger.info({ previousChunks }, "Memoria liberada");
 
   res.json({
     status: "Memoria liberada",
@@ -242,12 +260,34 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
+// Registrar callbacks para metricas observables
+todosGauge.addCallback((result) => {
+  result.observe(currentTodosCount, { instance: INSTANCE_ID });
+});
+
+memoryGauge.addCallback((result) => {
+  result.observe(process.memoryUsage().rss, { instance: INSTANCE_ID });
+});
+
+stressChunksGauge.addCallback((result) => {
+  result.observe(memoryHog.length, { instance: INSTANCE_ID });
+});
+
 // Inicializar servidor
 async function iniciarServidor() {
   await conectarRedis();
 
+  // Cargar conteo inicial de tareas
+  try {
+    const todos = await redisClient.get("todos");
+    currentTodosCount = todos ? JSON.parse(todos).length : 0;
+    logger.info({ currentTodosCount }, "Conteo inicial de tareas cargado");
+  } catch (e) {
+    logger.error({ err: e }, "Error al cargar conteo inicial");
+  }
+
   app.listen(PORT, () => {
-    logger.info({ port: PORT, redisUrl: REDIS_URL }, 'Servidor API iniciado');
+    logger.info({ port: PORT, redisUrl: REDIS_URL }, "Servidor API iniciado");
   });
 }
 
