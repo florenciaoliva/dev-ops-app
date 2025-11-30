@@ -1,5 +1,5 @@
 const express = require("express");
-const redis = require("redis");
+const { Redis } = require("@upstash/redis");
 const cors = require("cors");
 const pino = require("pino");
 require("dotenv").config();
