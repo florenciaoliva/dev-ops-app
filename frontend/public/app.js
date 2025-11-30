@@ -1,4 +1,4 @@
-const API_URL =  "https://todo-api-latest-gpya.onrender.com/api"
+const API_URL = "/api"
 async function cargarTareas() {
     try {
         console.log("prueba RENDER")
