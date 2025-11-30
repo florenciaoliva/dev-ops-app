@@ -40,8 +40,23 @@
 
     <div>
         <h3>Estado del Sistema</h3>
-        <button onclick="verificarEstado()">Verificar Conexión API/Redis</button>
+        <button onclick="verificarEstado()">Verificar Conexion API/Redis</button>
         <div id="estadoSistema"></div>
+    </div>
+
+    <div style="margin-top: 20px; padding: 15px; border: 2px solid #ff6b6b; background-color: #fff5f5;">
+        <h3>Stress Test (Demo HA)</h3>
+        <p style="font-size: 12px; color: #666;">
+            Simula alta carga de memoria para demostrar alta disponibilidad.
+            El load balancer redirigira el trafico a la instancia saludable.
+        </p>
+        <button onclick="activarStress()" style="background-color: #ff6b6b; color: white;">
+            Activar Stress Test
+        </button>
+        <p style="font-size: 11px; color: #999; margin-top: 10px;">
+            Para recuperar la instancia: <code>docker-compose restart api-1</code>
+        </p>
+        <div id="stressStatus"></div>
     </div>
 
     <script src="app.js"></script>
