@@ -174,10 +174,10 @@ app.delete("/api/todos/:id", async (req, res) => {
   }
 });
 
-// POST /api/stress - Asignar memoria para simular alta carga
+// POST /api/stress - Asignar memoria para simular alta carga (80% del limite)
 app.post("/api/stress", (req, res) => {
   const allocateMB = 50; // Chunks de 50MB
-  const chunks = 20; // Total: ~1GB
+  const chunks = 8; // Total: ~400MB (80% de 512MB limite)
 
   logger.warn("Iniciando stress test de memoria");
 
@@ -227,23 +227,41 @@ app.post("/api/stress/clear", (req, res) => {
 });
 
 // GET /api/health - Endpoint para verificar el estado de la API y Redis
+// Retorna 503 si memoria > 80% del limite (410MB de 512MB)
+const MEMORY_LIMIT_MB = 512;
+const MEMORY_THRESHOLD_PERCENT = 80;
+const MEMORY_THRESHOLD_MB = (MEMORY_LIMIT_MB * MEMORY_THRESHOLD_PERCENT) / 100;
+
 app.get("/api/health", async (req, res) => {
   const mem = process.memoryUsage();
   const rssMB = Math.round(mem.rss / 1024 / 1024);
+  const memoryPercent = Math.round((rssMB / MEMORY_LIMIT_MB) * 100);
+  const isHealthy = rssMB < MEMORY_THRESHOLD_MB;
 
   try {
     await redisClient.ping();
-    res.json({
-      status: "OK",
+
+    const response = {
+      status: isHealthy ? "OK" : "UNHEALTHY",
       instance: INSTANCE_ID,
       api: "Funcionando",
       redis: "Conectado",
       memory: {
         rssMB,
+        limitMB: MEMORY_LIMIT_MB,
+        percent: memoryPercent,
+        threshold: MEMORY_THRESHOLD_PERCENT,
         stressChunks: memoryHog.length,
       },
       timestamp: new Date().toISOString(),
-    });
+    };
+
+    if (isHealthy) {
+      res.json(response);
+    } else {
+      logger.warn({ rssMB, memoryPercent }, "Health check: memoria alta, marcando como unhealthy");
+      res.status(503).json(response);
+    }
   } catch (error) {
     res.status(500).json({
       status: "ERROR",
@@ -252,6 +270,8 @@ app.get("/api/health", async (req, res) => {
       redis: "Desconectado",
       memory: {
         rssMB,
+        limitMB: MEMORY_LIMIT_MB,
+        percent: memoryPercent,
         stressChunks: memoryHog.length,
       },
       error: error.message,
