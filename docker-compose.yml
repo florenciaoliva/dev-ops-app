@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # Servicio Redis para almacenamiento en caché
@@ -20,9 +20,14 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+      - "9464:9464"
     environment:
       - PORT=3000
-      - REDIS_URL=https://daring-gnu-13089.upstash.io
+      - REDIS_URL=${REDIS_URL}
+      - REDIS_TOKEN=${REDIS_TOKEN}
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     depends_on:
       - redis
     networks:
