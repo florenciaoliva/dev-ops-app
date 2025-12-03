@@ -4,6 +4,9 @@ const cors = require("cors");
 const pino = require("pino");
 require("dotenv").config();
 
+// Importar metricas desde tracing.js
+const { todosCounter, todosGauge, memoryGauge, stressChunksGauge } = require("./tracing");
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const REDIS_URL = process.env.REDIS_URL || "redis://redis:6379";
@@ -17,6 +20,9 @@ const logger = pino({
 
 // Memory stress test storage
 let memoryHog = [];
+
+// Variable para almacenar el conteo actual de tareas (para metricas)
+let currentTodosCount = 0;
 
 app.use(cors());
 app.use(express.json());
@@ -58,12 +64,14 @@ async function conectarRedis() {
 app.get("/api/todos", async (req, res) => {
   try {
     const todos = await redisClient.get("todos");
-    const lista = Array.isArray(todos)
-      ? todos
-      : todos
-      ? todos // si es string, parsearlo
-      : [];
-    res.json(lista);
+    if (todos) {
+      const parsed = JSON.parse(todos);
+      currentTodosCount = parsed.length;
+      res.json(parsed);
+    } else {
+      currentTodosCount = 0;
+      res.json([]);
+    }
   } catch (error) {
     logger.error({ err: error }, "Error al obtener tareas");
     res.status(500).json({ error: "Error al obtener las tareas" });
@@ -95,6 +103,10 @@ app.post("/api/todos", async (req, res) => {
 
     tareasActuales.push(nuevaTarea);
     await redisClient.set("todos", JSON.stringify(tareasActuales));
+
+    // Actualizar metricas
+    todosCounter.add(1);
+    currentTodosCount = tareasActuales.length;
 
     logger.info({ taskId: nuevaTarea.id, texto }, "Tarea creada");
     res.status(201).json(nuevaTarea);
@@ -146,6 +158,9 @@ app.delete("/api/todos/:id", async (req, res) => {
 
     const tareaEliminada = tareasActuales.splice(indice, 1)[0];
     await redisClient.set("todos", JSON.stringify(tareasActuales));
+
+    // Actualizar metrica
+    currentTodosCount = tareasActuales.length;
 
     logger.info({ taskId: id }, "Tarea eliminada");
     res.json({ mensaje: "Tarea eliminada exitosamente", tarea: tareaEliminada });
@@ -241,9 +256,38 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
+// Registrar callbacks para metricas observables
+todosGauge.addCallback((result) => {
+  result.observe(currentTodosCount, { instance: INSTANCE_ID });
+});
+
+memoryGauge.addCallback((result) => {
+  result.observe(process.memoryUsage().rss, { instance: INSTANCE_ID });
+});
+
+stressChunksGauge.addCallback((result) => {
+  result.observe(memoryHog.length, { instance: INSTANCE_ID });
+});
+
 // Inicializar servidor
 async function iniciarServidor() {
   await conectarRedis();
+
+  // Cargar conteo inicial de tareas
+  try {
+    const todos = await redisClient.get("todos");
+    // Upstash puede devolver array ya parseado o string
+    if (Array.isArray(todos)) {
+      currentTodosCount = todos.length;
+    } else if (todos) {
+      currentTodosCount = JSON.parse(todos).length;
+    } else {
+      currentTodosCount = 0;
+    }
+    logger.info({ currentTodosCount }, "Conteo inicial de tareas cargado");
+  } catch (e) {
+    logger.error({ err: e }, "Error al cargar conteo inicial");
+  }
 
   app.listen(PORT, () => {
     logger.info({ port: PORT, redisUrl: REDIS_URL }, "Servidor API iniciado");
