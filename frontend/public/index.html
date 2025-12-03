@@ -1,49 +1,98 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Lista de Tareas - ToDo App</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 20px auto;
-            padding: 20px;
-        }
-        input, button {
-            padding: 8px;
-            margin: 5px;
-        }
-        .tarea {
-            border: 1px solid #ccc;
-            padding: 10px;
-            margin: 5px 0;
-        }
-        .completada {
-            text-decoration: line-through;
-            background-color: #f0f0f0;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 20px auto;
+        padding: 20px;
+      }
+      input,
+      button {
+        padding: 8px;
+        margin: 5px;
+      }
+      .tarea {
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin: 5px 0;
+      }
+      .completada {
+        text-decoration: line-through;
+        background-color: #f0f0f0;
+      }
     </style>
-</head>
-<body>
-    <h1>📝 Lista de Tareas (ToDos)</h1>
+  </head>
+  <body>
+    <h1>📝 Lista de Tareas (ToDo)</h1>
 
     <div>
-        <input type="text" id="nuevaTarea" placeholder="Escribir nueva tarea..." />
-        <button onclick="agregarTarea()">Agregar</button>
+      <input type="text" id="nuevaTarea" placeholder="Escribir nueva tarea..." />
+      <button onclick="agregarTarea()">Agregar</button>
     </div>
 
     <div id="listaTareas">
-        <p>Cargando tareas...</p>
+      <p>Cargando tareas...</p>
     </div>
 
     <div>
-        <h3>Estado del Sistema</h3>
-        <button onclick="verificarEstado()">Verificar Conexión API/Redis</button>
-        <div id="estadoSistema"></div>
+      <h3>Estado del Sistema</h3>
+      <button onclick="verificarEstado()">Verificar Conexion API/Redis</button>
+      <div id="estadoSistema"></div>
+    </div>
+
+    <div
+      style="margin-top: 20px; padding: 15px; border: 2px solid #ff6b6b; background-color: #fff5f5"
+    >
+      <h3>Demo Alta Disponibilidad (HA)</h3>
+      <p style="font-size: 12px; color: #666">
+        Sigue los pasos para demostrar el failover del load balancer.
+      </p>
+
+      <div id="stressWizard">
+        <!-- Step 1 -->
+        <div id="step1" style="margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+          <strong>Paso 1:</strong> Detectar instancia actual
+          <button onclick="stepDetectarInstancia()" style="margin-left: 10px; background-color: #4CAF50; color: white;">
+            Detectar Instancia
+          </button>
+          <div id="step1Result"></div>
+        </div>
+
+        <!-- Step 2 -->
+        <div id="step2" style="margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; opacity: 0.5;">
+          <strong>Paso 2:</strong> Activar stress en esa instancia
+          <button id="btnStep2" onclick="stepActivarStress()" style="margin-left: 10px; background-color: #ff6b6b; color: white;" disabled>
+            Activar Stress
+          </button>
+          <div id="step2Result"></div>
+        </div>
+
+        <!-- Step 3 -->
+        <div id="step3" style="margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; opacity: 0.5;">
+          <strong>Paso 3:</strong> Verificar failover a otra instancia
+          <button id="btnStep3" onclick="stepVerificarFailover()" style="margin-left: 10px; background-color: #2196F3; color: white;" disabled>
+            Verificar Failover
+          </button>
+          <div id="step3Result"></div>
+        </div>
+
+        <!-- Reset -->
+        <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #ddd;">
+          <button onclick="resetDemo()" style="background-color: #9e9e9e; color: white;">
+            Reiniciar Demo
+          </button>
+          <span style="font-size: 11px; color: #999; margin-left: 10px;">
+            Para recuperar instancia: <code>docker-compose restart api-1</code>
+          </span>
+        </div>
+      </div>
     </div>
 
     <script src="app.js"></script>
-</body>
+  </body>
 </html>
