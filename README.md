@@ -20,7 +20,7 @@ open http://localhost:8080
 
 ## 🏗️ Tecnologías
 
-- **Frontend**: HTML5, CSS3, JavaScript (Vanilla)
+- **Frontend**: HTML5,     CSS3, JavaScript (Vanilla)
 - **Backend**: Node.js, Express.js
 - **Base de Datos**: Redis (in-memory)
 - **Contenedores**: Docker, Docker Compose
