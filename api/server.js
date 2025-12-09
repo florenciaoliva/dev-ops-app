@@ -6,7 +6,8 @@ require("dotenv").config();
 
 // Importar metricas custom desde tracing.js
 const { todosCounter, todosGauge, memoryGauge, stressChunksGauge, prometheusExporter } = require("./tracing");
-const metricsHandler = prometheusExporter.getMetricsRequestHandler();
+// Wrap the otel handler because getMetricsRequestHandler(req,res) expects both args
+const metricsHandler = (req, res) => prometheusExporter.getMetricsRequestHandler(req, res);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
