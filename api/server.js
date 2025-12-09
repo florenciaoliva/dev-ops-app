@@ -9,7 +9,9 @@ const { todosCounter, todosGauge, memoryGauge, stressChunksGauge, prometheusExpo
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const REDIS_URL = process.env.REDIS_URL || "redis://redis:6379";
+// Redis Upstash (hardcodeado por requerimiento)
+const REDIS_URL = "https://daring-gnu-13089.upstash.io";
+const REDIS_TOKEN = "AahXAAIncDIxNjg5ZDVhOTMxOTU0NDZiOTY4MTdhNGJiMjY4OTYyZnAyNDMwOTU";
 const INSTANCE_ID = process.env.INSTANCE_ID || "1";
 
 // Logger estructurado
@@ -53,7 +55,7 @@ async function conectarRedis() {
   try {
     redisClient = new Redis({
       url: REDIS_URL,
-      token: process.env.REDIS_TOKEN,
+      token: REDIS_TOKEN,
     });
 
     // Upstash Redis connects automatically on first request
