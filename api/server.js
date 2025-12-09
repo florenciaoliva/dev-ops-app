@@ -10,7 +10,7 @@ const { todosCounter, todosGauge, memoryGauge, stressChunksGauge, prometheusExpo
 const app = express();
 const PORT = process.env.PORT || 3000;
 // Redis Upstash (hardcodeado por requerimiento)
-const REDIS_URL = "https://daring-gnu-13089.upstash.io";
+const REDIS_URL = "https://inviting-catfish-43095.upstash.io";
 const REDIS_TOKEN = "AahXAAIncDIxNjg5ZDVhOTMxOTU0NDZiOTY4MTdhNGJiMjY4OTYyZnAyNDMwOTU";
 const INSTANCE_ID = process.env.INSTANCE_ID || "1";
 
