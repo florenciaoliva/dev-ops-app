@@ -30,7 +30,7 @@ app.use(cors());
 app.use(express.json());
 
 // Exponer métricas para Prometheus en el mismo puerto de la app
-app.get("/metrics", prometheusExporter.getMetricsRequestHandler());
+app.get("/metrics", (req, res) => prometheusExporter.getMetricsRequestHandler()(req, res));
 
 // Middleware de logging de requests
 app.use((req, res, next) => {
