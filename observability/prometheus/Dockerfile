@@ -7,8 +7,4 @@ COPY prometheus.yml /etc/prometheus/prometheus.yml
 EXPOSE 9090
 
 # Usa el entrypoint por defecto y solo define los argumentos necesarios
-CMD [
-  "--config.file=/etc/prometheus/prometheus.yml",
-  "--storage.tsdb.path=/prometheus",
-  "--web.enable-lifecycle"
-]
+CMD ["--config.file=/etc/prometheus/prometheus.yml","--storage.tsdb.path=/prometheus","--web.enable-lifecycle"]

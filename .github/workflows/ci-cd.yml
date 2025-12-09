@@ -76,7 +76,8 @@ jobs:
     - name: Build and push Prometheus image
       uses: docker/build-push-action@v5
       with:
-        context: ./observability/prometheus
+        context: ./observability
+        file: ./observability/prometheus/Dockerfile
         push: true
         tags: |
           ${{ secrets.DOCKER_USERNAME }}/${{ env.PROMETHEUS_IMAGE_NAME }}:latest
