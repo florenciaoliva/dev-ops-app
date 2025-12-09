@@ -1,5 +1,5 @@
-// API URL - usa ruta relativa para pasar por NGINX load balancer
-const API_URL = "/api";
+// API URL - en Render el frontend va directo al backend publicado
+const API_URL = "https://todo-api-latest-gpya.onrender.com/api";
 
 // Almacena la última instancia vista en "Verificar Conexión"
 let currentInstance = null;
