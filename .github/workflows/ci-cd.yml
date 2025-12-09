@@ -14,6 +14,7 @@ env:
   PROMETHEUS_IMAGE_NAME: todo-prometheus
   GRAFANA_IMAGE_NAME: todo-grafana
   CADVISOR_IMAGE_NAME: todo-cadvisor
+  NGINX_IMAGE_NAME: todo-nginx
 
 jobs:
   test:
@@ -100,6 +101,15 @@ jobs:
         tags: |
           ${{ secrets.DOCKER_USERNAME }}/${{ env.CADVISOR_IMAGE_NAME }}:latest
           ${{ secrets.DOCKER_USERNAME }}/${{ env.CADVISOR_IMAGE_NAME }}:${{ github.sha }}
+    - name: Build and push Nginx balancer image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./nginx
+        file: ./nginx/Dockerfile.render
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/${{ env.NGINX_IMAGE_NAME }}:latest
+          ${{ secrets.DOCKER_USERNAME }}/${{ env.NGINX_IMAGE_NAME }}:${{ github.sha }}
     - name: Trigger Render deploy front
       # Despliega en Render también en pull_request del mismo repo (se requieren secrets disponibles)
       if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'

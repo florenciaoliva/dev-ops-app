@@ -14,11 +14,10 @@ scrape_configs:
     scheme: https
     metrics_path: /metrics
     static_configs:
-      # Se scrapea el mismo endpoint dos veces para preservar las etiquetas "instance" usadas en el dashboard
       - targets: ['todo-api-latest-gpya.onrender.com']
         labels:
           instance: '1'
-      - targets: ['todo-api-latest-gpya.onrender.com']
+      - targets: ['todo-api-2-u2ae.onrender.com']
         labels:
           instance: '2'
 
