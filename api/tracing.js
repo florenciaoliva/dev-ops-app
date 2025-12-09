@@ -19,6 +19,8 @@ const sdk = new NodeSDK({
     getNodeAutoInstrumentations({
       // Desactivar instrumentacion de filesystem (muy verbose)
       "@opentelemetry/instrumentation-fs": { enabled: false },
+      // Desactivar express para evitar conflicto con handler de /metrics
+      "@opentelemetry/instrumentation-express": { enabled: false },
     }),
   ],
 });

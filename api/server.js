@@ -6,6 +6,7 @@ require("dotenv").config();
 
 // Importar metricas custom desde tracing.js
 const { todosCounter, todosGauge, memoryGauge, stressChunksGauge, prometheusExporter } = require("./tracing");
+const metricsHandler = prometheusExporter.getMetricsRequestHandler();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -30,7 +31,8 @@ app.use(cors());
 app.use(express.json());
 
 // Exponer métricas para Prometheus en el mismo puerto de la app
-app.get("/metrics", (req, res) => prometheusExporter.getMetricsRequestHandler()(req, res));
+app.get("/metrics", metricsHandler);
+app.head("/metrics", metricsHandler);
 
 // Raíz para health-check simple (Render suele usar "/")
 app.get("/", (req, res) => {
