@@ -32,6 +32,17 @@ app.use(express.json());
 // Exponer métricas para Prometheus en el mismo puerto de la app
 app.get("/metrics", (req, res) => prometheusExporter.getMetricsRequestHandler()(req, res));
 
+// Raíz para health-check simple (Render suele usar "/")
+app.get("/", (req, res) => {
+  res.json({
+    status: "ok",
+    service: "todo-api",
+    instance: INSTANCE_ID,
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Middleware de logging de requests
 app.use((req, res, next) => {
   const start = Date.now();
