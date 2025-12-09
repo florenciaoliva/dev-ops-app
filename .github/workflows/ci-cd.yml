@@ -101,14 +101,16 @@ jobs:
           ${{ secrets.DOCKER_USERNAME }}/${{ env.CADVISOR_IMAGE_NAME }}:latest
           ${{ secrets.DOCKER_USERNAME }}/${{ env.CADVISOR_IMAGE_NAME }}:${{ github.sha }}
     - name: Trigger Render deploy front
-      if: github.ref == 'refs/heads/main'
+      # Despliega en Render también en pull_request del mismo repo (se requieren secrets disponibles)
+      if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
       env:
         RENDER_DEPLOY_HOOK_URL_FRONT: ${{ secrets.RENDER_DEPLOY_HOOK_URL_FRONT }}
       run: |
         curl "$RENDER_DEPLOY_HOOK_URL_FRONT"
     
     - name: Trigger Render deploy api
-      if: github.ref == 'refs/heads/main'
+      # Despliega en Render también en pull_request del mismo repo (se requieren secrets disponibles)
+      if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
       env:
         RENDER_DEPLOY_HOOK_URL_API: ${{ secrets.RENDER_DEPLOY_HOOK_URL_API }}
       run: |
