@@ -5,10 +5,10 @@ const { metrics } = require("@opentelemetry/api");
 
 const INSTANCE_ID = process.env.INSTANCE_ID || "1";
 
-// Prometheus exporter - expone metricas en puerto 9464
+// Prometheus exporter - se expone via Express (/metrics) usando el mismo puerto de la app
 const prometheusExporter = new PrometheusExporter({
-  port: 9464,
   endpoint: "/metrics",
+  preventServerStart: true,
 });
 
 // Inicializar OpenTelemetry SDK
@@ -53,9 +53,10 @@ module.exports = {
   memoryGauge,
   stressChunksGauge,
   INSTANCE_ID,
+  prometheusExporter,
 };
 
-console.log(`[Instancia ${INSTANCE_ID}] OpenTelemetry inicializado. Metricas en :9464/metrics`);
+console.log(`[Instancia ${INSTANCE_ID}] OpenTelemetry inicializado. Metricas en /metrics (mismo puerto de la app)`);
 
 // Shutdown graceful
 process.on("SIGTERM", () => {

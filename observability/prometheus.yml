@@ -6,21 +6,19 @@ scrape_configs:
   # Prometheus se monitorea a si mismo
   - job_name: 'prometheus'
     static_configs:
-      - targets: ['localhost:9090']
+      - targets: ['todo-prometheus.onrender.com']
+    scheme: https
 
   # Metricas de las instancias de API (OpenTelemetry)
   - job_name: 'todo-api'
     static_configs:
-      - targets: ['api-1:9464', 'api-2:9464']
-    relabel_configs:
-      - source_labels: [__address__]
-        regex: 'api-(\d+):.*'
-        target_label: instance
-        replacement: '$1'
+      - targets: ['todo-api-latest-gpya.onrender.com']
+    scheme: https
 
   # Metricas de contenedores (cAdvisor)
   - job_name: 'cadvisor'
     static_configs:
-      - targets: ['cadvisor:8080']
+      - targets: ['todo-cadvisor.onrender.com']
+    scheme: https
 
   # Nota: Redis no tiene metricas locales (usando Upstash cloud)

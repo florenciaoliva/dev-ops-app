@@ -5,7 +5,7 @@ const pino = require("pino");
 require("dotenv").config();
 
 // Importar metricas custom desde tracing.js
-const { todosCounter, todosGauge, memoryGauge, stressChunksGauge } = require("./tracing");
+const { todosCounter, todosGauge, memoryGauge, stressChunksGauge, prometheusExporter } = require("./tracing");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,6 +26,9 @@ let currentTodosCount = 0;
 
 app.use(cors());
 app.use(express.json());
+
+// Exponer métricas para Prometheus en el mismo puerto de la app
+app.get("/metrics", prometheusExporter.getMetricsRequestHandler());
 
 // Middleware de logging de requests
 app.use((req, res, next) => {
